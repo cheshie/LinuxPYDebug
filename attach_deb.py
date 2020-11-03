@@ -1,5 +1,3 @@
-from os import execv, wait, WIFSTOPPED, fork, waitpid, WSTOPSIG
-from sys import argv, exit
 from defines import *
 
 # Funkcja obsugujaca debugger. Czeka na sygnaly / zdarzenia
