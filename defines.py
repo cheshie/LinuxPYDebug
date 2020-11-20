@@ -1,12 +1,25 @@
-from os import execv, wait, WIFSTOPPED, fork, waitpid, WSTOPSIG
+from os import execv, wait, WIFSTOPPED, fork, waitpid, WSTOPSIG, system
 from sys import argv, exit
-from ctypes import c_ulonglong, byref, cast, CDLL, c_uint64, c_void_p, Structure
+from ctypes import c_ulonglong, byref, cast, CDLL, c_uint64, c_void_p, Structure, c_int, c_size_t
+from struct import pack
+from binascii import hexlify
+from mmap import PAGESIZE
 
 # get stdlib from ctypes => is it called stdlib??
 libc = CDLL('libc.so.6')
 # TODO: WHAT ARE THESE FOR?
-libc.ptrace.argtypes = [c_uint64, c_uint64, c_void_p, c_void_p]
+libc.ptrace.argtypes = [c_uint64, c_uint64, c_uint64, c_void_p]
+# libc.ptrace.argtypes = [c_uint64, c_uint64, c_void_p, c_void_p]
 libc.ptrace.restype = c_uint64
+
+mprotect = libc.mprotect
+mprotect.restype  = c_uint64
+mprotect.argtypes = [c_uint64, c_uint64, c_uint64]
+PROT_NONE = 0x0
+PROT_READ = 0x1
+PROT_WRITE = 0x2
+PROT_EXEC = 0x04
+
 
 
 
@@ -30,6 +43,8 @@ PTRACE_GETREGS    = 12
 PTRACE_SETREGS    = 13
 
 # Registers -----------
+# Defined in user.h
+# source: https://code.woboq.org/userspace/glibc/sysdeps/unix/sysv/linux/x86/sys/user.h.html
 class RegsStruct(Structure):
     _fields_ = [
         ("r15", c_ulonglong),

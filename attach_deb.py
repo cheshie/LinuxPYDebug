@@ -6,7 +6,7 @@ def debugger(pid):
     icounter = 0
 
     # Przechwytywanie procesu o okreslonym PID
-    ptrace(PTRACE_ATTACH, pid, None, None)
+    ptrace(PTRACE_ATTACH, pid, 0, None)
 
     # Funkcja zwraca tuple zawierajaca ID procesu oraz
     # 2-bajtowy status
@@ -29,7 +29,6 @@ def debugger(pid):
 #
 
 if __name__ == "__main__":
-    # Debugger jako rodzic
     if len(argv[1:]):
         debugger(int(argv[1]))
 #

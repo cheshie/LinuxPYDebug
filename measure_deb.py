@@ -1,9 +1,10 @@
 from defines import *
+from datetime import datetime
 
 # Proces debugowany (potomek)
 def debugee(progname):
     # Zezwalaj na debugowanie tego procesu
-    # ptrace(PTRACE_TRACEME, 0, 0, 0)
+    ptrace(PTRACE_TRACEME, 0, 0, 0)
 
     # Uruchom program o nazwie progname
     execv(progname, (progname, str(0)))
@@ -18,13 +19,15 @@ def debugger(pid):
 
     # Oczekuj na sygnaly od potomka do
     # momentu jego zatrzymania
+    start = datetime.now()
     while (WIFSTOPPED(status[1])):
         icounter+=1
         # Nakaz potomkowi wykonac kolejna instrukcje
         ptrace(PTRACE_SINGLESTEP, pid, 0, 0)
         status = wait()
 
-    print(f"Potomek wykonal {icounter} instrukcji")
+    stop = datetime.now()
+    print(f"Potomek wykonal {icounter} instrukcji, w czasie {(stop - start).seconds} sekund")
 
 if __name__ == "__main__":
     pid = fork()

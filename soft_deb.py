@@ -1,24 +1,33 @@
-from ctypes import c_void_p
-
 from defines import *
+
+regs = RegsStruct()
 
 # Funkcja obsugujaca debugger. Czeka na sygnaly / zdarzenia
 def debugger(pid):
-    instr_addr = c_uint64(0x40102c) #c_ulonglong(0x40102c) #
-    print("what: ", instr_addr)
+    breakpoint1_addr = 0x0000000000401d05# 0x0000000000001169 #0x40102c
+    status = wait()
+
+    while WIFSTOPPED(status[1]):
+        soft_bp(pid, breakpoint1_addr)
+        ptrace(PTRACE_SINGLESTEP, pid, 0, 0)
+        status = wait()
+
+def soft_bp(pid, instr_addr):
+    # Pobierz aktualny stan RIP
+    ptrace(PTRACE_GETREGS, pid, 0, byref(regs))
+    print("\nPotomek zostal zatrzymany na adresie RIP = 0x%x" % (regs.rip))
+
     # Odczyt instrukcji ze wskazanej komorki pamieci
-    org_instr       = bytes(ptrace(PTRACE_PEEKTEXT, pid, cast(byref(instr_addr), c_void_p), 0))
-    print(f"Oryginalna zawartosc pamieci z adresu {instr_addr}: ", org_instr)
-    exit()
+    org_instr = ptrace(PTRACE_PEEKTEXT, pid, c_ulonglong(instr_addr), 0)
+    print("Oryginalna zawartosc pamieci z 0x%x:  0x%x" % (instr_addr, org_instr))
 
     # Zapis specjalnej instrukcji int3 pod wskazany adres
-    instr_trap = c_ulonglong((org_instr & 0xFFFFFF00) | 0xCC)
-    ptrace(PTRACE_POKETEXT, pid, cast(byref(instr_addr), c_void_p), cast(byref(instr_trap), c_void_p))
+    instr_trap = (org_instr & 0xFFFFFFFFFFFFFF00) | 0xCC
+    ptrace(PTRACE_POKETEXT, pid, instr_addr, instr_trap)
+    zm_instr = ptrace(PTRACE_PEEKTEXT, pid, instr_addr, 0)
+    print("Zmieniona zawartosc pamieci z 0x%x:  0x%x" % (instr_addr, zm_instr))
 
-    zm_instr       = ptrace(PTRACE_PEEKTEXT, pid, cast(byref(instr_addr), c_void_p), 0)
-    print(f"Zmieniona zawartosc pamieci z adresu {instr_addr}: ", zm_instr)
-
-    # kontynuuj wykonanie potomka, zaczekaj az dotrze to wyjatku
+    # kontynuuj wykonanie potomka, zaczekaj az dotrze do wyjatku
     ptrace(PTRACE_CONT, pid, 0, 0)
 
     # Petla debuggera - oczekujemy na dalsze zdarzenia
@@ -27,17 +36,15 @@ def debugger(pid):
         print("Potomek otrzymal sygnal: ", WSTOPSIG(status[1]))
 
     # Pobierz aktualny stan RIP
-    regs = RegsStruct()
     ptrace(PTRACE_GETREGS, pid, 0, byref(regs))
-    print("Potomek zostal zatrzymany na adresie RIP = 0x{:016X}".format(regs.rip))
+    print("Potomek zostal zatrzymany na adresie RIP = 0x%x" % (regs.rip))
 
     # Przywroc oryginalna instrukcje, cofnij wskaznik instrukcji (RIP)
-    ptrace(PTRACE_POKETEXT, pid, cast(byref(instr_addr), c_void_p), cast(byref(org_instr), c_void_p))
+    ptrace(PTRACE_POKETEXT, pid, instr_addr, org_instr)
     regs.rip -= 1
     ptrace(PTRACE_SETREGS, pid, 0, byref(regs))
 
-    # Wznow dzialanie
-    ptrace(PTRACE_CONT, pid, 0, 0)
+    input()
 #
 
 # Proces debugowany (potomek)
