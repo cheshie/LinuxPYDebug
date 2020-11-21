@@ -1,3 +1,4 @@
+from collections import namedtuple
 from os import execv, wait, WIFSTOPPED, fork, waitpid, WSTOPSIG, system
 from sys import argv, exit
 from ctypes import c_ulonglong, byref, cast, CDLL, c_uint64, c_void_p, Structure, c_int, c_size_t
@@ -12,6 +13,7 @@ libc.ptrace.argtypes = [c_uint64, c_uint64, c_uint64, c_void_p]
 # libc.ptrace.argtypes = [c_uint64, c_uint64, c_void_p, c_void_p]
 libc.ptrace.restype = c_uint64
 
+# Memory protection (mprotect)
 mprotect = libc.mprotect
 mprotect.restype  = c_uint64
 mprotect.argtypes = [c_uint64, c_uint64, c_uint64]
@@ -20,9 +22,7 @@ PROT_READ = 0x1
 PROT_WRITE = 0x2
 PROT_EXEC = 0x04
 
-
-
-
+# Ptrace calls
 ptrace = libc.ptrace
 PTRACE_TRACEME    = 0
 PTRACE_SINGLESTEP = 9
@@ -36,7 +36,6 @@ PTRACE_PEEKTEXT   = 1
 PTRACE_POKETEXT   = 4
 # Continue execution
 PTRACE_CONT       = 7
-
 
 # Context actions - get registers etc ---
 PTRACE_GETREGS    = 12
@@ -77,4 +76,31 @@ class RegsStruct(Structure):
     ]
 
 # Signals
-SIGSTOP = 19
+# Most common signals used in examples
+signals = {
+    2  : 'SIGINT',
+    5  : 'SIGTRAP',
+    11 : 'SIGSEGV',
+    15 : 'SIGTERM',
+    18 : 'SIGCONT',
+    19 : 'SIGSTOP',
+}
+
+
+# Load maps for specific process
+maps = namedtuple('mapping', ['addr_start', 'addr_end', 'permissions', 'offset', 'device_id', 'inode', 'map_name'])
+def load_maps(pid):
+    with open('/proc/{}/maps'.format(pid), 'r') as h_maps:
+        for line in h_maps.readlines():
+            parts    = line.split()
+            map_line = maps(
+                *map(lambda x: int(x, 16), parts[0].split('-')),
+                parts[1],
+                int(parts[2], 16),
+                parts[3],
+                parts[4],
+                parts[5] if len(parts) > 5 else ''
+            )
+            yield map_line
+#
+

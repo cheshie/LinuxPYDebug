@@ -15,7 +15,7 @@ def debugger(pid):
     # Sprawdz czy udalo sie przechwycic wykonywanie procesu
     # (proces otrzymal sygnal SIGSTOP)
     if WIFSTOPPED(status[1]):
-        if WSTOPSIG(status[1]) == SIGSTOP:
+        if WSTOPSIG(status[1]) == list(signals.keys())[list(signals.values()).index('SIGSTOP')]:
             # Dopoki sledzony proces nie zakonczyl pracy
             while (WIFSTOPPED(status[1])):
                 icounter += 1
