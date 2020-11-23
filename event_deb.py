@@ -5,7 +5,7 @@ regs = RegsStruct()
 # Funkcja obsugujaca debugger. Czeka na sygnaly / zdarzenia
 
 def debugger(pid):
-    breakpoint_dict = {'addr': 0x0000000000401cfd, 'org_instr' : ''}
+    breakpoint_dict = {'addr': 0x401042, 'org_instr' : ''}
     status = wait()
 
     while WIFSTOPPED(status[1]):
@@ -28,8 +28,6 @@ def obsluga_zdarzenia(pid):
     print("RSP = 0x%x" % (regs.rsp))
     print("RBP = 0x%x" % (regs.rbp))
     print("EFLAGS = 0x%x" % (regs.eflags))
-    print("=================== DUMP =========================")
-
     print("=================== DUMP =========================")
     print()
 
@@ -58,7 +56,7 @@ def set_bp(pid, bp_dict):
     # Petla debuggera - oczekujemy na dalsze zdarzenia
     status = wait()
     if (WIFSTOPPED(status[1])):
-        print("Potomek otrzymal sygnal: ", WSTOPSIG(status[1]))
+        print("\nPotomek otrzymal sygnal: ", signals[WSTOPSIG(status[1])])
 #
 
 # Proces debugowany (potomek)

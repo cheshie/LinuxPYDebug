@@ -3,7 +3,7 @@ from defines import *
 # Proces debugowany (potomek)
 def debugee(progname):
     # Zezwalaj na debugowanie tego procesu
-    # ptrace(PTRACE_TRACEME, 0, 0, 0)
+    ptrace(PTRACE_TRACEME, 0, 0, 0)
 
     # Uruchom program o nazwie progname
     execv(progname, (progname, str(0)))

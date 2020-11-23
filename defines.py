@@ -5,6 +5,7 @@ from ctypes import c_ulonglong, byref, cast, CDLL, c_uint64, c_void_p, Structure
 from struct import pack
 from binascii import hexlify
 from mmap import PAGESIZE
+from os import getcwd
 
 # get stdlib from ctypes => is it called stdlib??
 libc = CDLL('libc.so.6')
@@ -28,6 +29,7 @@ PTRACE_TRACEME    = 0
 PTRACE_SINGLESTEP = 9
 PTRACE_ATTACH     = 16
 PTRACE_DETACH     = 17
+PTRACE_SYSCALL    = 24
 
 # Breakpoints --------
 # Search memory

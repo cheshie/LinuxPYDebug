@@ -19,7 +19,7 @@ def debugger(pid):
             # Dopoki sledzony proces nie zakonczyl pracy
             while (WIFSTOPPED(status[1])):
                 icounter += 1
-                print(f"Potomek wykonal jak dotad {icounter} instrukcji")
+                print(f"Proces jak dotad {icounter} instrukcji")
                 # Nakaz potomkowi wykonac kolejna instrukcje
                 ptrace(PTRACE_SINGLESTEP, pid, 0, 0)
                 status = waitpid(pid, 0)

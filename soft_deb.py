@@ -33,7 +33,7 @@ def soft_bp(pid, instr_addr):
     # Petla debuggera - oczekujemy na dalsze zdarzenia
     status = wait()
     if (WIFSTOPPED(status[1])):
-        print("Potomek otrzymal sygnal: ", WSTOPSIG(status[1]))
+        print("Potomek otrzymal sygnal: ", signals[WSTOPSIG(status[1])])
 
     # Pobierz aktualny stan RIP
     ptrace(PTRACE_GETREGS, pid, 0, byref(regs))

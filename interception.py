@@ -1,6 +1,5 @@
 from random import randint
 from defines import *
-from os import getcwd
 
 regs = RegsStruct()
 
