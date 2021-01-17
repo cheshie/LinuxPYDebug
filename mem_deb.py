@@ -17,23 +17,20 @@ def debugger(pid):
         status = wait()
         if (WIFSTOPPED(status[1])):
             print("Potomek otrzymal sygnal: ", signals[WSTOPSIG(status[1])])
-            input()
-            ptrace(PTRACE_CONT, pid, 0, 0)
-            
 #
 
 def mem_bp(pid):
+    backup_regs = RegsStruct()
+    regs = RegsStruct()
+    
     # Pobierz aktualny stan RIP
     ptrace(PTRACE_GETREGS, pid, 0, byref(regs))
     print("\nPotomek zostal zatrzymany na adresie RIP = 0x%x" % (regs.rip))
 
     # Zachowaj aktualna instrukcje oraz stan rejestrow
-    backup_regs = RegsStruct()
-    regs = RegsStruct()
     ptrace(PTRACE_GETREGS, pid, 0, byref(backup_regs))
     ptrace(PTRACE_GETREGS, pid, 0, byref(regs))
     org_instr = ptrace(PTRACE_PEEKDATA, pid, c_ulonglong(regs.rip), 0)
-    print("Oryginalna zawartosc pamieci z 0x%x:  0x%x" % (regs.rip, org_instr))
 
     # zmien instrukcje na syscall, przygotuj rejestry do mprotect
     regs.rax = 10 # mprotect - system call nr
