@@ -1,7 +1,5 @@
 from defines import *
 
-regs = RegsStruct()
-
 # Funkcja obsugujaca debugger. Czeka na sygnaly / zdarzenia
 def debugger(pid):
     # Przechwytywanie procesu o okreslonym PID
@@ -19,55 +17,48 @@ def debugger(pid):
         status = wait()
         if (WIFSTOPPED(status[1])):
             print("Potomek otrzymal sygnal: ", signals[WSTOPSIG(status[1])])
+            input()
+            ptrace(PTRACE_CONT, pid, 0, 0)
+            
 #
 
 def mem_bp(pid):
-    # 1. Znalezc segment z kodem programu
-    # instr_offset = 0x141e - 0x1000
-    # maps = load_maps(pid)
-    #
-    # text_segment = list(filter(
-    #     lambda x: x.map_name == f"{getcwd()}/memory" and x.permissions == 'r-xp',
-    #     maps
-    # ))[0]
-    #
-    # instr_addr = text_segment.addr_start + instr_offset
-
     # Pobierz aktualny stan RIP
     ptrace(PTRACE_GETREGS, pid, 0, byref(regs))
     print("\nPotomek zostal zatrzymany na adresie RIP = 0x%x" % (regs.rip))
 
-    instr_addr = regs.rip
-
     # Zachowaj aktualna instrukcje oraz stan rejestrow
     backup_regs = RegsStruct()
+    regs = RegsStruct()
     ptrace(PTRACE_GETREGS, pid, 0, byref(backup_regs))
-    org_instr = ptrace(PTRACE_PEEKTEXT, pid, c_ulonglong(instr_addr), 0)
-    print("Oryginalna zawartosc pamieci z 0x%x:  0x%x" % (instr_addr, org_instr))
+    ptrace(PTRACE_GETREGS, pid, 0, byref(regs))
+    org_instr = ptrace(PTRACE_PEEKDATA, pid, c_ulonglong(regs.rip), 0)
+    print("Oryginalna zawartosc pamieci z 0x%x:  0x%x" % (regs.rip, org_instr))
 
     # zmien instrukcje na syscall, przygotuj rejestry do mprotect
-    ptrace(PTRACE_POKETEXT, pid, c_ulonglong(instr_addr), 0x0000000000000f05)
-    regs.rax = 0x10 # mprotect - system call nr
-    regs.rdi = get_page_start_addr(int(argv[2], 16)) # adres startu
-    regs.rsi = 0x1 * PAGESIZE # dlugosc - 1 strona pamieci
+    regs.rax = 10 # mprotect - system call nr
+    regs.rdi = get_page_start_addr(int(argv[1], 16)) + 0x1000 # adres startu
+    print("BP ustawiony na:", hex(get_page_start_addr(int(argv[1], 16)) + 0x1000))
+    regs.rsi = 1024# dlugosc
     regs.rdx = PROT_NONE # protection
-    nowa_instr = ptrace(PTRACE_PEEKTEXT, pid, c_ulonglong(instr_addr), 0)
-    print("Nowa zawartosc pamieci z 0x%x:  0x%x" % (instr_addr, nowa_instr))
-
-    # wykonaj syscall
-    ptrace(PTRACE_SYSCALL, pid, 0, 0)
+    
+    ptrace(PTRACE_SETREGS, pid, 0, byref(regs))
+    ptrace(PTRACE_POKEDATA, pid, c_ulonglong(regs.rip), 0x050f)
+    ptrace(PTRACE_SINGLESTEP, pid, 0, 0)
+    
+    ptrace(PTRACE_GETREGS, pid, 0, byref(regs))
+    print("Memprotect result: ", regs.rax)
 
     # Przywroc oryginalne instrukcje oraz stan rejestrow
     ptrace(PTRACE_SETREGS, pid, 0, byref(backup_regs))
-    ptrace(PTRACE_POKETEXT, pid, c_ulonglong(instr_addr), org_instr)
-
+    ptrace(PTRACE_POKEDATA, pid, c_ulonglong(backup_regs.rip), org_instr)
     # kontynuuj wykonanie
     ptrace(PTRACE_CONT, pid, 0, 0)
 
 # Get start address
 def get_page_start_addr(addr):
-    return addr & ~(PAGESIZE-1)
+    return addr & -PAGESIZE
 
 if __name__ == "__main__":
-    debugger(int(argv[1]))
+    debugger(int(argv[2]))
 

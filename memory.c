@@ -11,12 +11,11 @@ static char *buffer;
 int main(int argc, char *argv[])
 {
 	int pagesize;
-	struct sigaction sa;
+    pagesize = sysconf(_SC_PAGE_SIZE);
 
 	buffer = memalign(pagesize, 4 * pagesize);
 	printf("Start of region:        %p\n", buffer);
 	printf("Process ID: %d\n", getpid());
-	unsigned long long * addr = buffer;
 	
 	getchar();
 
@@ -25,9 +24,9 @@ int main(int argc, char *argv[])
 		if (counter == 1024){
 			counter = 0;
 			sleep(1);
+            printf("a");
+            printf(" - Current region: %p\n", p);
 		}
-
-		printf("a");
 		*(p++) = 'a';
 		counter++;
 	}
