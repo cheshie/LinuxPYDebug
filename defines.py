@@ -34,8 +34,10 @@ PTRACE_SYSCALL    = 24
 # Breakpoints --------
 # Search memory
 PTRACE_PEEKTEXT   = 1
+PTRACE_PEEKDATA   = 2
 # Insert into memory
 PTRACE_POKETEXT   = 4
+PTRACE_POKEDATA   = 5
 # Continue execution
 PTRACE_CONT       = 7
 
